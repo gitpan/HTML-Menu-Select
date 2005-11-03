@@ -1,0 +1,16 @@
+Artistic
+Build.PL
+Changes
+Copying
+Makefile.PL
+MANIFEST
+Readme.html
+README
+lib/HTML/Menu/Select.pm
+t/menu.t
+t/options-multi.t
+t/options-single.t
+t/pod_coverage.t
+t/pod_test.t
+t/popup_menu.t
+META.yml

@@ -1,0 +1,15 @@
+--- #YAML:1.0
+name: HTML-Menu-Select
+version: 1.00
+license: perl
+distribution_type: module
+requires:
+  Test::More: 0
+recommends: {}
+build_requires: {}
+conflicts: {}
+provides:
+  HTML::Menu::Select:
+    file: lib/HTML/Menu/Select.pm
+    version: 1.00
+generated_by: Module::Build version 0.20
