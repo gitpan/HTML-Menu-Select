@@ -24,9 +24,12 @@
 		<li><a href="#popup_menu__"><code>popup_menu()</code></a></li>
 	</ul>
 
+	<li><a href="#html_escaping">HTML escaping</a></li>
+	<li><a href="#cgi_pm_compatability">CGI.pm COMPATABILITY</a></li>
 	<li><a href="#support___bugs">SUPPORT / BUGS</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#credits">CREDITS</a></li>
 	<li><a href="#copyright_and_license">COPYRIGHT AND LICENSE</a></li>
 </ul>
 <!-- INDEX END -->
@@ -103,11 +106,17 @@ commands:</p>
 <dd>
 This is used in the <code>select</code> tag's <code>name=&quot;&quot;</code> attribute.
 </dd>
+<dd>
+<p>The name value will be run through escapeHTML(), see <a href="#html_escaping">HTML escaping</a>.</p>
+</dd>
 <p></p>
 <dt><strong><a name="item_values">values</a></strong><br />
 </dt>
 <dd>
 This is an array-ref of values used for each of the <code>option</code> tags.
+</dd>
+<dd>
+<p>The values will be run through escapeHTML, see <a href="#html_escaping">HTML escaping</a>.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item_default">default</a></strong><br />
@@ -125,9 +134,9 @@ user-visible label of each <code>option</code> tag. Each key should match a
 value provided by the <a href="#item_values"><code>values</code></a> parameter.
 </dd>
 <dd>
-<p>If this parameter is not provided, or for any <code>value</code> which doesn't 
+<p>If this parameter is not provided, or for any <a href="#item_value"><code>value</code></a> which doesn't 
 have a matching key here, the user-visible label will be the 
-<code>option</code>'s <code>value</code>.</p>
+<code>option</code>'s <a href="#item_value"><code>value</code></a>.</p>
 </dd>
 <dd>
 <pre>
@@ -145,6 +154,9 @@ have a matching key here, the user-visible label will be the
   &lt;option name=&quot;1&quot;&gt;one&lt;/option&gt;
   &lt;option name=&quot;2&quot;&gt;two&lt;/option&gt;
   &lt;/select&gt;</pre>
+</dd>
+<dd>
+<p>The labels will be run through escapeHTML, see <a href="#html_escaping">HTML escaping</a>.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item_attributes">attributes</a></strong><br />
@@ -175,6 +187,22 @@ and value of a HTML attribute.</p>
   &lt;option style=&quot;color: #000;&quot; name=&quot;two&quot;&gt;two&lt;/option&gt;
   &lt;/select&gt;</pre>
 </dd>
+<dd>
+<p>All attribute values (but not the attribute name) will be run through 
+escapeHTML, see <a href="#html_escaping">HTML escaping</a>.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_value">value</a></strong><br />
+</dt>
+<dd>
+An alias for <a href="#item_value"><code>value</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_defaults">defaults</a></strong><br />
+</dt>
+<dd>
+An alias for <a href="#item_default"><code>default</code></a>.
+</dd>
 <p></p></dl>
 <p>All parameters are optional, though it doesn't make much sense to not 
 provide anything for <a href="#item_values"><code>values</code></a>.</p>
@@ -192,6 +220,8 @@ attributes for the <code>select</code> tag. For example:</p>
   &lt;select name=&quot;&quot; id=&quot;myID&quot; onChange=&quot;do(this);&quot;&gt;
   &lt;option name=&quot;one&quot;&gt;one&lt;/option&gt;
   &lt;/select&gt;</pre>
+<p>All attribute values (but not the attribute name) will be run through 
+escapeHTML, see <a href="#html_escaping">HTML escaping</a>.</p>
 <p>
 </p>
 <h2><a name="options__"><code>options()</code></a></h2>
@@ -210,9 +240,82 @@ parameter is ignored.</p>
 </p>
 <h2><a name="popup_menu__"><code>popup_menu()</code></a></h2>
 <p><code>popup_menu()</code> is an alias for <a href="#menu__">menu()</a> for those familiar with 
-CGI.
+CGI.</p>
+<p>
+</p>
+<hr />
+<h1><a name="html_escaping">HTML escaping</a></h1>
+<p>If any of the following modules are already loaded into memory, their own 
+escapeHTML (or equivalent) method will be used</p>
+<dl>
+<dt><strong><a name="item_cgi">CGI</a></strong><br />
+</dt>
+<dt><strong><a name="item_cgi_3a_3asimple">CGI::Simple</a></strong><br />
+</dt>
+<dt><strong><a name="item_html_3a_3aentities">HTML::Entities</a></strong><br />
+</dt>
+<dt><strong><a name="item_apache_3a_3autil">Apache::Util</a></strong><br />
+</dt>
+</dl>
+<p>Otherwise the following characters will be escaped</p>
+<pre>
+  &amp; &lt; &gt; &quot;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="cgi_pm_compatability">CGI.pm COMPATABILITY</a></h1>
+<dl>
+<dt><strong><a name="item_arguments_may_be_passed_as_a_hash_2dreference_2c_r">Arguments may be passed as a hash-reference, rather than a hash.</a></strong><br />
+</dt>
+<dd>
+This allows compile time checking, rather than runtime.
+</dd>
+<dd>
+<pre>
+  popup_menu( name =&gt; $name );
+  
+  # OR
+  popup_menu( {name =&gt; $name} );</pre>
+</dd>
+<p></p></dl>
+<p>Arguments to the <a href="#menu__">menu()</a>, <a href="#options__">options()</a> and <a href="#popup_menu__">popup_menu()</a> functions 
+are similar to CGI.pm's, excepting the following differences.</p>
+<dl>
+<dt><strong><a name="item_named_arguments_should_not_have_a_leading_dash">Named arguments should not have a leading dash</a></strong><br />
+</dt>
+<dd>
+<pre>
+  popup_menu( name =&gt; $name );
+  
+  # NOT
+  # popup_menu( -name =&gt; $name );</pre>
+</dd>
+<dt><strong><a name="item_positional_arguments_are_not_supported">Positional arguments are not supported</a></strong><br />
+</dt>
+<dd>
+<pre>
+  popup_menu( name =&gt; $name, labels =&gt; \@labels );
+  
+  # NOT
+  # popup_menu( $name, \@labels );</pre>
+</dd>
+<dt><strong><a name="item_attribute_names_not_lowercased">Attribute names not lowercased</a></strong><br />
+</dt>
+<dd>
+An argument to CGI.pm's popup_menu such as <code>-onChange =</code> 'check()'&gt; will 
+output the HTML <code>onchange=&quot;check()&quot;</code>.
+
+
+</dd>
+<dd>
+<p>This module will retain the case, outputting <code>onChange=&quot;check()&quot;</code>.
 
 </p>
+</dd>
+<p></p>
+<dt><strong><a name="item_the_optgroup_function_is_not_yet_supported">The <code>optgroup</code> function is not yet supported</a></strong><br />
+</dt>
+</dl>
 <p>
 </p>
 <hr />
@@ -239,6 +342,14 @@ DateTime::Locale.
 <p>Carl Franks &lt;<a href="mailto:cpan@fireartist.com">cpan@fireartist.com</a>&gt;
 
 </p>
+<p>
+</p>
+<hr />
+<h1><a name="credits">CREDITS</a></h1>
+<pre>
+  Ron Savage
+
+</pre>
 <p>
 </p>
 <hr />

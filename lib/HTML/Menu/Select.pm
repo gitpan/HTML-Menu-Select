@@ -1,7 +1,9 @@
 package HTML::Menu::Select;
+use 5.004;
 use strict;
+use Carp 'carp';
 
-our $VERSION = '1.00';
+our $VERSION = '1.01';
 
 require Exporter;
 our @ISA = qw( Exporter );
@@ -13,22 +15,22 @@ our @EXPORT_OK = qw(
 our %EXPORT_TAGS = ( all => \@EXPORT_OK );
 
 our @KNOWN_KEYS = qw( 
-  name values default defaults labels attributes size multiple );
+  name value values default defaults labels attributes size multiple override );
 
 
 sub popup_menu { &menu };
 
 sub menu {
-  my (%arg) = @_;
-  my $html  = '';
+  my %arg  = (ref $_[0]) ? %{$_[0]} : @_;
+  my $html = '';
   
   $arg{name} = '' if not exists $arg{name};
   
-  $html = sprintf '<select name="%s"', $arg{name};
+  $html = sprintf '<select name="%s"', _escapeHTML( $arg{name} );
   
   for my $key (keys %arg) {
     if (! grep {$key eq $_} @KNOWN_KEYS) {
-      $html .= sprintf ' %s="%s"', $key, $arg{$key};
+      $html .= sprintf ' %s="%s"', $key, _escapeHTML( $arg{$key} );
     }
   }
   
@@ -41,16 +43,24 @@ sub menu {
 
 
 sub options {
-  my (%arg) = @_;
+  my %arg  = (ref $_[0]) ? %{$_[0]} : @_;
   my $html  = '';
   
-  $arg{default} = $arg{defaults} 
-    if exists $arg{defaults};
+  # aliases
+  for (qw/ value default /) {
+    $arg{$_} = $arg{"${_}s"} 
+      if exists $arg{"${_}s"};
+    
+    $arg{$_} = [$arg{$_}]
+      if exists $arg{$_} && ! ref $arg{$_};
+  }
   
-  $arg{default} = [$arg{default}]
-    if exists $arg{default} && ! ref $arg{default};
+  # don't support CGI.pm's 'override' argument
+  if (exists $arg{override}) {
+    carp "CGI.pm's 'override' argument is not supported by HTML::Menu::Select";
+  }
   
-  for my $option (@{ $arg{values} }) {
+  for my $option (@{ $arg{value} }) {
     $html .= '<option ';
     
     for my $default (@{ $arg{default} }) {
@@ -62,18 +72,20 @@ sub options {
     for my $att (keys %{ $arg{attributes} }) {
       if ($att eq $option) {
         for (keys %{ $arg{attributes}{$att} }) {
-          $html .= sprintf '%s="%s" ', $_, $arg{attributes}{$att}{$_};
+          $html .= sprintf '%s="%s" ', 
+                           $_, 
+                           _escapeHTML( $arg{attributes}{$att}{$_} );
         }
       }
     }
     
-    $html .= sprintf 'value="%s">', $option;
+    $html .= sprintf 'value="%s">', _escapeHTML( $option );
     
     if (exists $arg{labels} && exists $arg{labels}{$option}) {
-      $html .= $arg{labels}{$option};
+      $html .= _escapeHTML( $arg{labels}{$option} );
     }
     else {
-      $html .= $option;
+      $html .= _escapeHTML( $option );
     }
     
     $html .= '</option>';
@@ -83,6 +95,33 @@ sub options {
   return $html;
 }
 
+
+sub _escapeHTML {
+  my ($escape) = (@_);
+  
+  return unless defined $escape;
+  
+  if (exists $::INC{'CGI.pm'}) {
+    return CGI::escapeHTML( $escape );
+  }
+  elsif (exists $::INC{'CGI/Simple/Util.pm'}) {
+    return CGI::Simple::Util::escapeHTML( $escape );
+  }
+  elsif (exists $::INC{'HTML/Entities.pm'}) {
+    return HTML::Entities::encode_entities( $escape );
+  }
+  elsif (exists $::INC{'Apache/Util.pm'}) {
+    return Apache::Util::escape_html( $escape );
+  }
+  
+  # looks like nothing's already loaded to do it for us
+  $escape =~ s/&/&amp;/gs;
+  $escape =~ s/</&lt;/gs;
+  $escape =~ s/>/&gt;/gs;
+  $escape =~ s/"/&quot;/gs;
+  
+  return $escape;
+}
 
 1;
 
@@ -159,9 +198,13 @@ C<menu()> accepts the following parameters:
 
 This is used in the C<select> tag's C<name=""> attribute.
 
+The name value will be run through escapeHTML(), see L<"HTML escaping">.
+
 =item values
 
 This is an array-ref of values used for each of the C<option> tags.
+
+The values will be run through escapeHTML, see L<"HTML escaping">.
 
 =item default
 
@@ -193,6 +236,8 @@ C<option>'s C<value>.
   <option name="2">two</option>
   </select>
 
+The labels will be run through escapeHTML, see L<"HTML escaping">.
+
 =item attributes
 
 This is a hash-ref of values to provide extra HTML attributes for the 
@@ -217,6 +262,17 @@ and value of a HTML attribute.
   <option style="color: #000;" name="two">two</option>
   </select>
 
+All attribute values (but not the attribute name) will be run through 
+escapeHTML, see L<"HTML escaping">.
+
+=item value
+
+An alias for C<value>.
+
+=item defaults
+
+An alias for C<default>.
+
 =back
 
 All parameters are optional, though it doesn't make much sense to not 
@@ -236,6 +292,9 @@ attributes for the C<select> tag. For example:
   <select name="" id="myID" onChange="do(this);">
   <option name="one">one</option>
   </select>
+
+All attribute values (but not the attribute name) will be run through 
+escapeHTML, see L<"HTML escaping">.
 
 =head2 options()
 
@@ -258,6 +317,72 @@ parameter is ignored.
 C<popup_menu()> is an alias for L<"menu()"> for those familiar with 
 CGI.
 
+=head1 HTML escaping
+
+If any of the following modules are already loaded into memory, their own 
+escapeHTML (or equivalent) method will be used
+
+=over
+
+=item CGI
+
+=item CGI::Simple
+
+=item HTML::Entities
+
+=item Apache::Util
+
+=back
+
+Otherwise the following characters will be escaped
+
+  & < > "
+
+=head1 CGI.pm COMPATABILITY
+
+=over
+
+=item Arguments may be passed as a hash-reference, rather than a hash.
+
+This allows compile time checking, rather than runtime.
+
+  popup_menu( name => $name );
+  
+  # OR
+  popup_menu( {name => $name} );
+
+=back
+
+Arguments to the L<"menu()">, L<"options()"> and L<"popup_menu()"> functions 
+are similar to CGI.pm's, excepting the following differences.
+
+=over
+
+=item Named arguments should not have a leading dash
+
+  popup_menu( name => $name );
+  
+  # NOT
+  # popup_menu( -name => $name );
+
+=item Positional arguments are not supported
+
+  popup_menu( name => $name, labels => \@labels );
+  
+  # NOT
+  # popup_menu( $name, \@labels );
+
+=item Attribute names not lowercased
+
+An argument to CGI.pm's popup_menu such as C<-onChange => 'check()'> will 
+output the HTML C<onchange="check()">.
+
+This module will retain the case, outputting C<onChange="check()">.
+
+=item The C<optgroup> function is not yet supported
+
+=back
+
 =head1 SUPPORT / BUGS
 
 Please log bugs, feature requests and patch submissions at 
@@ -273,6 +398,10 @@ DateTime::Locale.
 =head1 AUTHOR
 
 Carl Franks <cpan@fireartist.com>
+
+=head1 CREDITS
+
+  Ron Savage
 
 =head1 COPYRIGHT AND LICENSE
 
